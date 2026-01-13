@@ -1,0 +1,73 @@
+{# @var craft \craft\web\twig\variables\CraftVariable #}
+{# @var settings \gemini\craftgems\models\Settings #}
+
+{% import "_includes/forms" as forms %}
+
+{{ forms.textField({
+    label: "Gemini API Key",
+    instructions: "Enter your Google GenAI API Key.",
+    id: 'apiKey',
+    name: 'apiKey',
+    value: settings.apiKey,
+    required: true,
+}) }}
+
+<hr>
+
+<h2>Gems</h2>
+<p class="light">Define the Gems available for asset processing.</p>
+
+<div id="gems-container">
+    <table class="data fullwidth">
+        <thead>
+            <tr>
+                <th>Gem Name</th>
+                <th>Model ID/Prompt</th>
+                <th class="thin"></th>
+            </tr>
+        </thead>
+        <tbody id="gems-tbody">
+            {% for key, gem in settings.gems %}
+                <tr data-id="{{ key }}">
+                    <td>
+                        <input type="text" class="text fullwidth" name="gems[{{ key }}][name]" value="{{ gem.name ?? '' }}" placeholder="My Image Helper">
+                    </td>
+                    <td>
+                        <textarea class="text fullwidth" name="gems[{{ key }}][instruction]" rows="2" placeholder="Describe what this gem does...">{{ gem.instruction ?? '' }}</textarea>
+                    </td>
+                    <td>
+                        <a class="delete-icon" title="Delete"></a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="buttons">
+        <button type="button" class="btn add-icon" id="add-gem-btn">Add Gem</button>
+    </div>
+</div>
+
+{% js %}
+    var gemIndex = {{ settings.gems|length }};
+    $('#add-gem-btn').on('click', function() {
+        var html = `
+            <tr data-id="${gemIndex}">
+                <td>
+                    <input type="text" class="text fullwidth" name="gems[${gemIndex}][name]" value="" placeholder="New Gem">
+                </td>
+                <td>
+                    <textarea class="text fullwidth" name="gems[${gemIndex}][instruction]" rows="2" placeholder="Instruction..."></textarea>
+                </td>
+                <td>
+                    <a class="delete-icon" title="Delete"></a>
+                </td>
+            </tr>
+        `;
+        $('#gems-tbody').append(html);
+        gemIndex++;
+    });
+
+    $('#gems-tbody').on('click', '.delete-icon', function() {
+        $(this).closest('tr').remove();
+    });
+{% endjs %}
