@@ -14,7 +14,7 @@ class Settings extends Model
         return [
             ['apiKey', 'string'],
             ['apiKey', 'required'],
-            ['gems', 'array'],
+            ['gems', 'safe'],
         ];
     }
 }
