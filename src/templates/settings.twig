@@ -30,6 +30,6 @@
     id: 'gems',
     name: 'gems',
     cols: cols,
-    rows: settings.gems,
+    rows: settings.gems|default([]),
     addRowLabel: "Add a Gem"|t('craft-gems'),
 }) }}
