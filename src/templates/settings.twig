@@ -30,10 +30,10 @@
             {% for key, gem in settings.gems %}
                 <tr data-id="{{ key }}">
                     <td>
-                        <input type="text" class="text fullwidth" name="gems[{{ key }}][name]" value="{{ gem.name ?? '' }}" placeholder="My Image Helper">
+                        <input type="text" class="text fullwidth" name="settings[gems][{{ key }}][name]" value="{{ gem.name ?? '' }}" placeholder="My Image Helper">
                     </td>
                     <td>
-                        <textarea class="text fullwidth" name="gems[{{ key }}][instruction]" rows="2" placeholder="Describe what this gem does...">{{ gem.instruction ?? '' }}</textarea>
+                        <textarea class="text fullwidth" name="settings[gems][{{ key }}][instruction]" rows="2" placeholder="Describe what this gem does...">{{ gem.instruction ?? '' }}</textarea>
                     </td>
                     <td>
                         <a class="delete-icon" title="Delete"></a>
@@ -54,10 +54,10 @@
         var html = `
             <tr data-id="${gemIndex}">
                 <td>
-                    <input type="text" class="text fullwidth" name="gems[${gemIndex}][name]" value="" placeholder="New Gem">
+                    <input type="text" class="text fullwidth" name="settings[gems][${gemIndex}][name]" value="" placeholder="New Gem">
                 </td>
                 <td>
-                    <textarea class="text fullwidth" name="gems[${gemIndex}][instruction]" rows="2" placeholder="Instruction..."></textarea>
+                    <textarea class="text fullwidth" name="settings[gems][${gemIndex}][instruction]" rows="2" placeholder="Instruction..."></textarea>
                 </td>
                 <td>
                     <a class="delete-icon" title="Delete"></a>
