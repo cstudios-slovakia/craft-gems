@@ -1,5 +1,5 @@
 {
-  "name": "gemini-asset-processor/craft-gems",
+  "name": "cstudios-slovakia/craft-gems",
   "description": "Process Craft CMS assets using Gemini Gems",
   "type": "craft-plugin",
   "license": "MIT",
