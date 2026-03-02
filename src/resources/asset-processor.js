@@ -38,9 +38,20 @@ function initCraftGemsAssetProcessor($) {
         $container.append($heading);
         $container.append($content);
 
-        // Inject after the "File" info or at the bottom
-        // $sidebar is likely .element-sidebar
-        $sidebar.append($container);
+        // Inject into the primary details panel or sidebar
+        var injected = false;
+        if ($context.find('#details').length) {
+            $context.find('#details').append($container);
+            injected = true;
+        } else if ($context.find('.meta').last().length) {
+            // Alternatively, append after the last .meta block if #details isn't found
+            $context.find('.meta').last().after($container);
+            injected = true;
+        } else {
+            // Fallback
+            $context.append($container);
+            injected = true;
+        }
 
         // Events
         $selectInput.on('change', function () {
@@ -53,14 +64,23 @@ function initCraftGemsAssetProcessor($) {
 
         $btn.on('click', function () {
             var gemIndex = $selectInput.val();
-            var elementId = $sidebar.closest('form').find('input[name="elementId"]').val(); // This might vary depending on context
+
+            // In Craft 5, the asset ID is usually in the URL (.../edit/101-filename)
+            // or in a hidden input named 'elementId' or 'sourceId'
+            var elementId = $('input[name="elementId"]').val() || $('input[name="sourceId"]').val();
 
             if (!elementId) {
-                // Try to find it in the modal
-                elementId = $sidebar.closest('.element-editor').data('element-id');
+                // Try extracting from URL: /admin/assets/edit/101-2k_earth_normal_map
+                var match = window.location.pathname.match(/\/edit\/(\d+)-/);
+                if (match) {
+                    elementId = match[1];
+                }
             }
 
-            if (!elementId || gemIndex === "") return;
+            if (!elementId || gemIndex === "") {
+                Craft.cp.displayError('Could not determine Asset ID.');
+                return;
+            }
 
             $btn.addClass('disabled').text('Processing...');
 
@@ -78,23 +98,14 @@ function initCraftGemsAssetProcessor($) {
         });
     }
 
-    // Monitor for the Asset Editor sidebar
+    // Monitor for the Asset Editor loading
     var observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-            if (mutation.addedNodes.length) {
-                mutation.addedNodes.forEach(function (node) {
-                    if (node.nodeType === 1) {
-                        var $node = $(node);
-                        if ($node.hasClass('element-sidebar')) {
-                            injectCraftGemsUI($node);
-                        }
-                        if ($node.find('.element-sidebar').length) {
-                            injectCraftGemsUI($node.find('.element-sidebar'));
-                        }
-                    }
-                });
-            }
-        });
+        // In Craft 5, check if the details panel or the main edit form has rendered
+        if ($('#details').length && !$('.craft-gems-processor').length) {
+            injectCraftGemsUI($('#details').parent());
+        } else if ($('.editor-content').length && !$('.craft-gems-processor').length) {
+            injectCraftGemsUI($('.editor-content'));
+        }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
