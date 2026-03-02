@@ -48,6 +48,7 @@
 </div>
 
 {% js %}
+(function($) {
     var gemIndex = {{ settings.gems|length }};
     $('#add-gem-btn').on('click', function() {
         var html = `
@@ -70,4 +71,5 @@
     $('#gems-tbody').on('click', '.delete-icon', function() {
         $(this).closest('tr').remove();
     });
+})(jQuery);
 {% endjs %}
