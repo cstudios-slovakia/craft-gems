@@ -26,7 +26,7 @@
                 <th class="thin"></th>
             </tr>
         </thead>
-        <tbody id="gems-tbody">
+        <tbody class="gems-tbody">
             {% for key, gem in settings.gems %}
                 <tr data-id="{{ key }}">
                     <td>
@@ -43,14 +43,14 @@
         </tbody>
     </table>
     <div class="buttons">
-        <button type="button" class="btn add-icon" id="add-gem-btn">Add Gem</button>
+        <button type="button" class="btn add-icon add-gem-btn">Add Gem</button>
     </div>
 </div>
 
 {% js %}
 (function($) {
     var gemIndex = {{ settings.gems|length }};
-    $('#add-gem-btn').on('click', function() {
+    $('.add-gem-btn').on('click', function() {
         var html = `
             <tr data-id="${gemIndex}">
                 <td>
@@ -64,11 +64,11 @@
                 </td>
             </tr>
         `;
-        $('#gems-tbody').append(html);
+        $('.gems-tbody').append(html);
         gemIndex++;
     });
 
-    $('#gems-tbody').on('click', '.delete-icon', function() {
+    $('.gems-tbody').on('click', '.delete-icon', function() {
         $(this).closest('tr').remove();
     });
 })(jQuery);
