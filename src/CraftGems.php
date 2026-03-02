@@ -41,13 +41,14 @@ class CraftGems extends Plugin
                 function (Event $event) {
                     $settings = CraftGems::$plugin->getSettings();
                     $view = Craft::$app->view;
-                    $view->registerJsVar('craftGemsSettings', [
-                        'gems' => $settings->gems
-                    ]);
-                    $view->registerJsFile(
-                        Craft::$app->assetManager->getPublishedUrl(__DIR__ . '/resources/asset-processor.js', true),
-                        ['depends' => [\craft\web\assets\cp\CpAsset::class]]
-                    );
+                    $gemsJson = json_encode(['gems' => $settings->gems ?: []]);
+
+                    // Register the variables into the global window scope first
+                    $view->registerJs("window.craftGemsSettings = {$gemsJson};", View::POS_HEAD);
+
+                    // Then register our script
+                    $url = Craft::$app->assetManager->getPublishedUrl(__DIR__ . '/resources/asset-processor.js', true);
+                    $view->registerJsFile($url, ['depends' => [\craft\web\assets\cp\CpAsset::class]]);
                 }
             );
         }
