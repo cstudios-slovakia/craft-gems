@@ -1,11 +1,17 @@
-(function ($) {
+if (typeof jQuery === 'undefined') {
+    window.addEventListener('load', function () {
+        if (typeof jQuery !== 'undefined') {
+            initCraftGemsAssetProcessor(jQuery);
+        }
+    });
+} else {
+    initCraftGemsAssetProcessor(jQuery);
+}
+
+function initCraftGemsAssetProcessor($) {
     /**
      * Craft Gems Asset Processor
      */
-
-    // We can't easily hook into the exact moment the sidebar is rendered without a specific event.
-    // However, Craft usually fires 'activate-element-editor' or similar.
-    // A simple polling approach or delegating from the body is robust for now.
 
     var settings = window.craftGemsSettings || { gems: [] };
 
@@ -49,10 +55,6 @@
             var gemIndex = $selectInput.val();
             var elementId = $sidebar.closest('form').find('input[name="elementId"]').val(); // This might vary depending on context
 
-            // If we are in a modal, the element ID might be available differently.
-            // Let's rely on Craft.elementEditor or the sidebar context.
-            // A more robust way inside the Assets section is getting the ID from the URL or the element itself.
-            // But let's assume we can grab it from a specific data attribute or input.
             if (!elementId) {
                 // Try to find it in the modal
                 elementId = $sidebar.closest('.element-editor').data('element-id');
@@ -77,21 +79,15 @@
     }
 
     // Monitor for the Asset Editor sidebar
-    // This typically appears in .element-editor .sidebar
-
-    // Garnish listener for element editor show?
-    // Using a MutationObserver is effective for catching dynamic modals.
     var observer = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
             if (mutation.addedNodes.length) {
                 mutation.addedNodes.forEach(function (node) {
                     if (node.nodeType === 1) {
-                        // Check if this is the element editor modal or sidebar
                         var $node = $(node);
                         if ($node.hasClass('element-sidebar')) {
                             injectCraftGemsUI($node);
                         }
-                        // Also check standard asset editor overlay
                         if ($node.find('.element-sidebar').length) {
                             injectCraftGemsUI($node.find('.element-sidebar'));
                         }
@@ -102,5 +98,4 @@
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-
-})(jQuery);
+}
