@@ -45,7 +45,8 @@ class CraftGems extends Plugin
                         'gems' => $settings->gems
                     ]);
                     $view->registerJsFile(
-                        Craft::$app->assetManager->getPublishedUrl(__DIR__ . '/resources/asset-processor.js', true)
+                        Craft::$app->assetManager->getPublishedUrl(__DIR__ . '/resources/asset-processor.js', true),
+                        ['depends' => [\craft\web\assets\cp\CpAsset::class]]
                     );
                 }
             );
