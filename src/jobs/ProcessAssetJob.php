@@ -25,23 +25,20 @@ class ProcessAssetJob extends BaseJob
             $url = $asset->getUrl();
 
             // Call service
-            $result = CraftGems::$plugin->geminiService->processAsset($url, $this->gemInstruction);
+            $resultText = CraftGems::$plugin->geminiService->processAsset($asset, $this->gemInstruction);
 
-            if ($result) {
-                // Logic to replace asset content
+            if ($resultText) {
                 Craft::info("Asset {$this->assetId} processed successfully.", 'craft-gems');
 
-                // In a real scenario, $result would be a URL or binary data.
-                // We would download it to a temp path.
-                // $tempPath = Craft::$app->path->getTempPath() . '/' . uniqid() . '.jpg';
-                // file_put_contents($tempPath, file_get_contents($result));
+                // The generic request was to "process" the asset. We will append the text to the asset title for now, 
+                // but this could easily be mapped to a custom field instead.
+                $originalTitle = $asset->title;
+                $asset->title = trim($originalTitle . ' - ' . $resultText);
 
-                // For this implementation without a real API, we will just log that we would replace it.
-                // To replace:
-                // Craft::$app->assets->replaceAssetFile($asset, $tempPath, $asset->filename);
-
-                // Trigger a resave to update transforms/metadata
-                // Craft::$app->elements->saveElement($asset);
+                // Save the updated element, circumventing validation if needed, but standard save is best
+                if (!Craft::$app->elements->saveElement($asset)) {
+                    Craft::error("Failed to save updated asset title: " . implode(', ', $asset->getFirstErrors()), 'craft-gems');
+                }
             }
         } catch (\Throwable $e) {
             Craft::error("Failed to process asset {$this->assetId}: " . $e->getMessage(), 'craft-gems');
