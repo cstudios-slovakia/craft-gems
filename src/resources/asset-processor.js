@@ -101,18 +101,23 @@ function initCraftGemsAssetProcessor($) {
     function injectCraftGemsEditorUI($editor) {
         if ($editor.find('.nano-banana-processor').length) return;
 
-        // Find the left sidebar where Rotate and Crop are
-        var $sidebar = $editor.find('.app-sidebar'); // Approximate class for Craft 4/5 editor sidebar
+        // Try to find the exact sidebar containing the image editor tools (Rotate/Crop)
+        var $sidebar = $editor.find('.image-editor-sidebar, .sidebar').first();
+
+        // If not found, look for the parent of the Rotate button
         if (!$sidebar.length) {
-            $sidebar = $editor.find('.sidebar');
+            var $rotateBtn = $editor.find('button:contains("Rotate"), .btn:contains("Rotate")');
+            if ($rotateBtn.length) {
+                $sidebar = $rotateBtn.closest('div').parent();
+            }
         }
 
         if (!$sidebar.length) return;
 
-        var $container = $('<div class="nano-banana-processor" style="margin-top:20px; padding: 10px; border-top: 1px solid rgba(255,255,255,0.1);"></div>');
-        var $heading = $('<div class="heading" style="color: #fff; margin-bottom: 10px; font-weight: bold;">Nano Banana</div>');
+        var $container = $('<div class="nano-banana-processor" style="margin-top:20px; padding: 20px 24px; border-top: 1px solid rgba(255,255,255,0.1);"></div>');
+        var $heading = $('<div class="heading" style="color: #ccc; margin-bottom: 15px; font-weight: 500; font-size: 11px; text-transform: uppercase;">Nano Banana</div>');
 
-        var $select = $('<div class="select fullwidth"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
+        var $select = $('<div class="select fullwidth" style="margin-bottom: 10px;"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
         var $selectInput = $select.find('select');
 
         settings.gems.forEach(function (gem, index) {
@@ -210,9 +215,10 @@ function initCraftGemsAssetProcessor($) {
             injectCraftGemsUI($('.editor-content'));
         }
 
-        // Image Editor specific
-        if ($('.image-editor').length || $('.image-editor-main').length) {
-            injectCraftGemsEditorUI($('.image-editor').length ? $('.image-editor') : $('.image-editor-main'));
+        // Image Editor specific - check for the image editor modal/container
+        var $imageEditor = $('.image-editor, .image-editor-main, .slideout-container .image-editor');
+        if ($imageEditor.length) {
+            injectCraftGemsEditorUI($imageEditor.last());
         }
     });
 
