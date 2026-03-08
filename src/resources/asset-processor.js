@@ -246,10 +246,10 @@ function initCraftGemsAssetProcessor($) {
             injectCraftGemsUI($('.editor-content'));
         }
 
-        // Image Editor specific - check for the image editor modal/container
-        var $imageEditor = $('.image-editor, .imageeditor, .image-editor-main, .slideout-container .image-editor, .slideout-container .imageeditor');
-        if ($imageEditor.length) {
-            injectCraftGemsEditorUI($imageEditor.last());
+        // Image Editor specific - check for the image editor modal/container tabs
+        var $imageEditorTabs = $('.tabs ul[role="tablist"]');
+        if ($imageEditorTabs.length) {
+            injectCraftGemsEditorUI($imageEditorTabs.closest('.tabs, .imageeditor, .image-editor'));
         }
     });
 
