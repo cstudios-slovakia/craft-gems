@@ -22,18 +22,26 @@ function initCraftGemsAssetProcessor($) {
         var $heading = $('<div class="heading">Craft Gems</div>');
         var $content = $('<div class="data"></div>');
 
-        // Create Dropdown
-        var $select = $('<div class="select fullwidth"><select id="craft-gems-select"><option value="">Select a Gem...</option></select></div>');
-        var $selectInput = $select.find('select');
+        // Create Radio Buttons Container
+        var $radioGroup = $('<div class="radio-group" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;"></div>');
+
+        if (settings.gems.length === 0) {
+            $radioGroup.append('<p class="light">No gems configured.</p>');
+        }
 
         settings.gems.forEach(function (gem, index) {
-            $selectInput.append(`<option value="${index}">${gem.name}</option>`);
+            $radioGroup.append(
+                '<label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">' +
+                '<input type="radio" name="craft-gems-selection" value="' + index + '" style="margin-right: 8px;"> ' +
+                gem.name +
+                '</label>'
+            );
         });
 
         // Create Button
-        var $btn = $('<button type="button" class="btn small disabled" id="craft-gems-process-btn">Process</button>');
+        var $btn = $('<button type="button" class="btn small disabled" id="craft-gems-process-btn" style="width: 100%;">Generate with Nano Banana</button>');
 
-        $content.append($select);
+        $content.append($radioGroup);
         $content.append($btn);
         $container.append($heading);
         $container.append($content);
@@ -54,16 +62,14 @@ function initCraftGemsAssetProcessor($) {
         }
 
         // Events
-        $selectInput.on('change', function () {
-            if ($(this).val() !== "") {
+        $radioGroup.on('change', 'input[type="radio"]', function () {
+            if ($(this).is(':checked')) {
                 $btn.removeClass('disabled');
-            } else {
-                $btn.addClass('disabled');
             }
         });
 
         $btn.on('click', function () {
-            var gemIndex = $selectInput.val();
+            var gemIndex = $('input[name="craft-gems-selection"]:checked').val();
 
             // In Craft 5, the asset ID is usually in the URL (.../edit/101-filename)
             // or in a hidden input named 'elementId' or 'sourceId'
@@ -82,20 +88,73 @@ function initCraftGemsAssetProcessor($) {
                 return;
             }
 
-            $btn.addClass('disabled').text('Processing...');
+            $btn.addClass('disabled').text('Generating...');
 
-            Craft.postActionRequest('craft-gems/asset/process', {
+            Craft.postActionRequest('craft-gems/asset/editor-process', {
                 assetId: elementId,
                 gemIndex: gemIndex
             }, function (response, textStatus) {
                 if (textStatus == 'success' && response.success) {
-                    Craft.cp.displayNotice('Processing started.');
+                    Craft.cp.displayNotice('Image Generated!');
+                    // Let's overlay the result directly on the main preview canvas in the detail view
+                    overlayGeneratedImageDetailView(response.imageUrl || response.base64, elementId);
                 } else {
-                    Craft.cp.displayError('Error starting process.');
+                    Craft.cp.displayError(response.error || 'Error generating image.');
                 }
-                $btn.removeClass('disabled').text('Process');
+                $btn.removeClass('disabled').text('Generate with Nano Banana');
             });
         });
+    }
+
+    function overlayGeneratedImageDetailView(imageSrc, elementId) {
+        var $previewContainer = $('.asset-preview, .preview, .pane.media').first();
+        if (!$previewContainer.length) {
+            Craft.cp.displayNotice('Image generated and ready to save!');
+            injectDetailSaveBtn(imageSrc, elementId);
+            return;
+        }
+
+        // Remove old overlay if exists
+        $('#nano-banana-detail-overlay').remove();
+
+        var $overlay = $(`<div id="nano-banana-detail-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: url(${imageSrc}) no-repeat center center; background-size: contain; z-index: 10;"></div>`);
+
+        // Ensure parent is relative so absolute positioning works
+        if ($previewContainer.css('position') === 'static') {
+            $previewContainer.css('position', 'relative');
+        }
+
+        $previewContainer.append($overlay);
+        injectDetailSaveBtn(imageSrc, elementId);
+    }
+
+    function injectDetailSaveBtn(imageSrc, elementId) {
+        if ($('#nano-banana-detail-save-btn').length) return;
+
+        var $saveTarget = $('.header-buttons .submit').length ? $('.header-buttons') : $('.btngroup.submit').parent();
+        if (!$saveTarget.length) $saveTarget = $('#header .flex-grow').last(); // Fallback header area
+
+        var $saveBtn = $('<button type="button" class="btn submit" id="nano-banana-detail-save-btn" style="background-color: #fca311; color: #fff; margin-left: 10px;">Save Nano Banana</button>');
+
+        $saveBtn.on('click', function () {
+            var $thisBtn = $(this);
+            $thisBtn.addClass('disabled').text('Saving...');
+
+            Craft.postActionRequest('craft-gems/asset/editor-save', {
+                assetId: elementId,
+                imageSrc: imageSrc
+            }, function (response, textStatus) {
+                if (textStatus == 'success' && response.success) {
+                    Craft.cp.displayNotice('Nano Banana applied successfully!');
+                    window.location.reload();
+                } else {
+                    Craft.cp.displayError('Error saving image.');
+                    $thisBtn.removeClass('disabled').text('Save Nano Banana');
+                }
+            });
+        });
+
+        $saveTarget.append($saveBtn);
     }
 
     function injectCraftGemsEditorUI($editor) {
