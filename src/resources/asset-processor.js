@@ -101,26 +101,25 @@ function initCraftGemsAssetProcessor($) {
     function injectCraftGemsEditorUI($editor) {
         if ($editor.find('.nano-banana-processor').length) return;
 
-        // In the Craft Image Editor, the left sidebar is typically `.image-editor-sidebar` or similar wrapper holding the tools.
-        // We can just find the Rotate/Crop container. In Craft, this is often a `div` containing elements like `.tool[data-tool="rotate"]` or `.btn`s.
-        var $sidebar = $editor.find('.sidebar, .app-sidebar, .image-editor-sidebar, .tool-list, [data-tool]').first();
+        // In the Craft Image Editor, try to find the container holding the tool tabs.
+        // Craft 5 uses elements with data-view (e.g. data-view="rotate", data-view="crop").
+        var $sidebar = $editor.find('[data-view="rotate"], [data-view="crop"]').closest('ul, .sidebar, .tool-list, div[role="tablist"]');
 
         if (!$sidebar.length) {
-            // Fallback to the first left-aligned sidebar element.
-            var $rotateBtn = $editor.find('button[aria-label="Rotate"], button:contains("Rotate"), div[role="button"]:contains("Rotate")');
+            $sidebar = $editor.find('.sidebar, .app-sidebar, .image-editor-sidebar, .tool-list, [data-tool]').first();
+        }
+
+        if (!$sidebar.length) {
+            var $rotateBtn = $editor.find('button[aria-label="Rotate"], button:contains("Rotate"), div[role="button"]:contains("Rotate"), li:contains("Rotate")');
             if ($rotateBtn.length) {
                 $sidebar = $rotateBtn.closest('ul, div.tools, div.sidebar');
             }
         }
 
-        if (!$sidebar.length) {
-            $sidebar = $editor.find('.left-sidebar, .tools'); // Try generic classes
-        }
-
         if (!$sidebar.length) return;
 
         // In the screenshot, the left sidebar has square tool buttons (Rotate, Crop).
-        var $container = $('<div class="nano-banana-processor" style="margin-top: auto; border-top: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding-top: 15px;"></div>');
+        var $container = $('<li class="nano-banana-processor" style="margin-top: auto; border-top: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding-top: 15px; display: block; width: 100%;"></li>');
         var $toolBtn = $('<button type="button" class="btn" style="width: 100%; justify-content: center; text-align: center; display:flex; flex-direction:column; align-items:center; padding: 10px; background: transparent; border: none; cursor: pointer; color: inherit; box-shadow: none;">' +
             '<span style="font-size: 22px; margin-bottom: 5px; opacity: 0.9;">&#127820;</span>' +
             '<span style="font-size: 11px; font-weight: 500;">Nano Banana</span>' +
