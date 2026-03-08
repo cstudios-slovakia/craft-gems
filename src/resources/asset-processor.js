@@ -101,32 +101,26 @@ function initCraftGemsAssetProcessor($) {
     function injectCraftGemsEditorUI($editor) {
         if ($editor.find('.nano-banana-processor').length) return;
 
-        // In the Craft Image Editor, try to find the container holding the tool tabs.
-        // Craft 5 uses elements with data-view (e.g. data-view="rotate", data-view="crop") or explicit tabs like #rotate-tab.
-        var $sidebar = $editor.find('[data-view="rotate"], [data-view="crop"], #rotate-tab, li:contains("Rotate")').closest('ul, .sidebar, .tool-list, div[role="tablist"]');
+        // In the Craft 5.8 Image Editor, tools are tabs inside `div.tabs > ul[role="tablist"]`.
+        var $sidebar = $editor.find('.tabs ul[role="tablist"], ul[role="tablist"]').first();
 
         if (!$sidebar.length) {
-            $sidebar = $editor.find('.sidebar, .app-sidebar, .image-editor-sidebar, .tool-list, [data-tool]').first();
-        }
-
-        if (!$sidebar.length) {
-            var $rotateBtn = $editor.find('button[aria-label="Rotate"], button:contains("Rotate"), div[role="button"]:contains("Rotate"), li:contains("Rotate")');
-            if ($rotateBtn.length) {
-                $sidebar = $rotateBtn.closest('ul, div.tools, div.sidebar');
-            }
+            $sidebar = $editor.find('.sidebar, .app-sidebar, .imageeditor, .tool-list, [data-tool], [data-view="rotate"], #rotate-tab, li:contains("Rotate")').closest('ul, .sidebar, .tool-list, div[role="tablist"]');
         }
 
         if (!$sidebar.length) return;
 
-        // In the screenshot, the left sidebar has square tool buttons (Rotate, Crop).
-        var $container = $('<li class="nano-banana-processor" style="margin-top: auto; border-top: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding-top: 15px; display: block; width: 100%;"></li>');
-        var $toolBtn = $('<button type="button" class="btn" style="width: 100%; justify-content: center; text-align: center; display:flex; flex-direction:column; align-items:center; padding: 10px; background: transparent; border: none; cursor: pointer; color: inherit; box-shadow: none;">' +
-            '<span style="font-size: 22px; margin-bottom: 5px; opacity: 0.9;">&#127820;</span>' +
-            '<span style="font-size: 11px; font-weight: 500;">Nano Banana</span>' +
-            '</button>');
+        // Match the Craft 5 tab style which is an `li` with `role="tab"`
+        var $container = $('<li id="nano-banana-tab" data-view="nano-banana" role="tab" tabindex="-1" aria-selected="false" class="" style="margin-top: 20px; border-top: 1px solid var(--hairline-color, rgba(150,150,150,0.2));"></li>');
 
-        var $panel = $('<div class="nano-banana-panel" style="display: none; position: absolute; left: 100%; top: 0; height: 100%; background: var(--sidebar-bg-color, var(--cp-sidebar-bg-color, #f3f7fc)); border-right: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); border-left: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding: 24px; width: 320px; z-index: 100; box-sizing: border-box; box-shadow: 10px 0 20px rgba(0,0,0,0.05); overflow-y: auto;"></div>');
-        var $heading = $('<h2 style="margin-top: 0; margin-bottom: 8px; font-size: 18px; font-weight: bold;">Nano Banana</h2><p style="margin-bottom: 24px; opacity: 0.7; font-size: 13px; line-height: 1.4;">Select a pre-configured Gemini prompt to modify this image in real-time.</p>');
+        // Inside the tab is usually `<i></i>ToolName`. We use our emoji as the icon.
+        var $toolBtn = $('<div style="display:flex; flex-direction:column; align-items:center; opacity: 0.8; cursor: pointer; padding: 10px 0;">' +
+            '<span style="font-size: 20px; line-height: 1; margin-bottom: 4px;">&#127820;</span>' +
+            '<span style="font-size: 11px;">Banana</span>' +
+            '</div>');
+
+        var $panel = $('<div class="nano-banana-panel" style="display: none; position: absolute; left: 100%; top: 0; height: 100%; background: var(--sidebar-bg-color, var(--cp-sidebar-bg-color, #f3f7fc)); border-right: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); border-left: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding: 24px; width: 320px; z-index: 1000; box-sizing: border-box; box-shadow: 10px 0 20px rgba(0,0,0,0.1); overflow-y: auto; text-align: left; cursor: default;"></div>');
+        var $heading = $('<h2 style="margin-top: 0; margin-bottom: 8px; font-size: 18px; font-weight: bold; color: inherit;">Nano Banana</h2><p style="margin-bottom: 24px; opacity: 0.7; font-size: 13px; line-height: 1.4;">Select a pre-configured Gemini prompt to modify this image in real-time.</p>');
         var $select = $('<div class="select fullwidth" style="margin-bottom: 16px;"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
         var $selectInput = $select.find('select');
 
@@ -139,19 +133,33 @@ function initCraftGemsAssetProcessor($) {
         $panel.append($heading).append($select).append($processBtn);
         $container.append($toolBtn);
 
-        // Append to sidebar, and panel as well
-        $sidebar.css('position', 'relative');
+        // Append to the list
         $sidebar.append($container);
-        $sidebar.append($panel);
 
-        $toolBtn.on('click', function () {
-            // Un-active other tools visually if possible by adding our own active state
+        // The panel should probably be appended to the parent `.tabs` or `.imageeditor` so it doesn't get clipped by `ul` overflows
+        $editor.append($panel);
+
+        $container.on('click', function (e) {
+            e.preventDefault();
+
             if ($panel.is(':visible')) {
                 $panel.hide();
-                $toolBtn.css('background', 'transparent');
+                $container.removeClass('selected');
+                $container.attr('aria-selected', 'false');
             } else {
+                // Ensure other native panels are closed conceptually if possible
+                $sidebar.find('li').removeClass('selected').attr('aria-selected', 'false');
+                $container.addClass('selected').attr('aria-selected', 'true');
+
+                // Position panel accurately next to sidebar
+                var sidebarRect = $sidebar.closest('.tabs')[0].getBoundingClientRect();
+                var editorRect = $editor[0].getBoundingClientRect();
+                $panel.css({
+                    left: (sidebarRect.width) + 'px',
+                    top: 0
+                });
+
                 $panel.show();
-                $toolBtn.css('background', 'var(--hairline-color, rgba(150,150,150,0.1))');
             }
         });
 
