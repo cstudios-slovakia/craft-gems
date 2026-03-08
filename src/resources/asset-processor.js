@@ -102,8 +102,8 @@ function initCraftGemsAssetProcessor($) {
         if ($editor.find('.nano-banana-processor').length) return;
 
         // In the Craft Image Editor, try to find the container holding the tool tabs.
-        // Craft 5 uses elements with data-view (e.g. data-view="rotate", data-view="crop").
-        var $sidebar = $editor.find('[data-view="rotate"], [data-view="crop"]').closest('ul, .sidebar, .tool-list, div[role="tablist"]');
+        // Craft 5 uses elements with data-view (e.g. data-view="rotate", data-view="crop") or explicit tabs like #rotate-tab.
+        var $sidebar = $editor.find('[data-view="rotate"], [data-view="crop"], #rotate-tab, li:contains("Rotate")').closest('ul, .sidebar, .tool-list, div[role="tablist"]');
 
         if (!$sidebar.length) {
             $sidebar = $editor.find('.sidebar, .app-sidebar, .image-editor-sidebar, .tool-list, [data-tool]').first();
@@ -239,7 +239,7 @@ function initCraftGemsAssetProcessor($) {
         }
 
         // Image Editor specific - check for the image editor modal/container
-        var $imageEditor = $('.image-editor, .image-editor-main, .slideout-container .image-editor');
+        var $imageEditor = $('.image-editor, .imageeditor, .image-editor-main, .slideout-container .image-editor, .slideout-container .imageeditor');
         if ($imageEditor.length) {
             injectCraftGemsEditorUI($imageEditor.last());
         }
