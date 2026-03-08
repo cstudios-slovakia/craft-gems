@@ -120,33 +120,40 @@ function initCraftGemsAssetProcessor($) {
         if (!$sidebar.length) return;
 
         // In the screenshot, the left sidebar has square tool buttons (Rotate, Crop).
-        // Let's create a similar tool container that expands our UI when clicked, or just injects it below them.
-        var $container = $('<div class="nano-banana-processor" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;"></div>');
-        var $toolBtn = $('<button type="button" class="btn small" style="width: 100%; justify-content: center; text-align: center; display:flex; flex-direction:column; align-items:center; padding: 10px; background: transparent; border: none; color: #fff; cursor: pointer;">' +
-            '<span style="font-size: 20px; margin-bottom: 5px;">&#127820;</span>' +
-            '<span style="font-size: 11px;">Nano Banana</span>' +
+        var $container = $('<div class="nano-banana-processor" style="margin-top: auto; border-top: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding-top: 15px;"></div>');
+        var $toolBtn = $('<button type="button" class="btn" style="width: 100%; justify-content: center; text-align: center; display:flex; flex-direction:column; align-items:center; padding: 10px; background: transparent; border: none; cursor: pointer; color: inherit; box-shadow: none;">' +
+            '<span style="font-size: 22px; margin-bottom: 5px; opacity: 0.9;">&#127820;</span>' +
+            '<span style="font-size: 11px; font-weight: 500;">Nano Banana</span>' +
             '</button>');
 
-        var $panel = $('<div class="nano-banana-panel" style="display: none; position: absolute; left: 100%; top: 0; background: #232d36; border: 1px solid #161d23; padding: 15px; width: 250px; z-index: 100; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>');
-        var $heading = $('<div style="color: #fff; font-weight: bold; margin-bottom: 10px;">Gems Prompts</div>');
-        var $select = $('<div class="select fullwidth" style="margin-bottom: 10px;"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
+        var $panel = $('<div class="nano-banana-panel" style="display: none; position: absolute; left: 100%; top: 0; height: 100%; background: var(--sidebar-bg-color, var(--cp-sidebar-bg-color, #f3f7fc)); border-right: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); border-left: 1px solid var(--hairline-color, rgba(150,150,150,0.2)); padding: 24px; width: 320px; z-index: 100; box-sizing: border-box; box-shadow: 10px 0 20px rgba(0,0,0,0.05); overflow-y: auto;"></div>');
+        var $heading = $('<h2 style="margin-top: 0; margin-bottom: 8px; font-size: 18px; font-weight: bold;">Nano Banana</h2><p style="margin-bottom: 24px; opacity: 0.7; font-size: 13px; line-height: 1.4;">Select a pre-configured Gemini prompt to modify this image in real-time.</p>');
+        var $select = $('<div class="select fullwidth" style="margin-bottom: 16px;"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
         var $selectInput = $select.find('select');
 
         settings.gems.forEach(function (gem, index) {
             $selectInput.append(`<option value="${index}">${gem.name}</option>`);
         });
 
-        var $processBtn = $('<button type="button" class="btn submit fullwidth disabled" id="nano-banana-process-btn">Generate</button>');
+        var $processBtn = $('<button type="button" class="btn submit fullwidth disabled" id="nano-banana-process-btn" style="height: 40px; font-size: 14px;">Generate Image</button>');
 
         $panel.append($heading).append($select).append($processBtn);
-        $container.append($toolBtn).append($panel);
+        $container.append($toolBtn);
 
-        // Fix positioning if the sidebar is relative
+        // Append to sidebar, and panel as well
         $sidebar.css('position', 'relative');
         $sidebar.append($container);
+        $sidebar.append($panel);
 
         $toolBtn.on('click', function () {
-            $panel.toggle();
+            // Un-active other tools visually if possible by adding our own active state
+            if ($panel.is(':visible')) {
+                $panel.hide();
+                $toolBtn.css('background', 'transparent');
+            } else {
+                $panel.show();
+                $toolBtn.css('background', 'var(--hairline-color, rgba(150,150,150,0.1))');
+            }
         });
 
         $selectInput.on('change', function () {
