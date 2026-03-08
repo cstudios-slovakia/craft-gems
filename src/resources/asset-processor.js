@@ -101,22 +101,34 @@ function initCraftGemsAssetProcessor($) {
     function injectCraftGemsEditorUI($editor) {
         if ($editor.find('.nano-banana-processor').length) return;
 
-        // Try to find the exact sidebar containing the image editor tools (Rotate/Crop)
-        var $sidebar = $editor.find('.image-editor-sidebar, .sidebar').first();
+        // In the Craft Image Editor, the left sidebar is typically `.image-editor-sidebar` or similar wrapper holding the tools.
+        // We can just find the Rotate/Crop container. In Craft, this is often a `div` containing elements like `.tool[data-tool="rotate"]` or `.btn`s.
+        var $sidebar = $editor.find('.sidebar, .app-sidebar, .image-editor-sidebar, .tool-list, [data-tool]').first();
 
-        // If not found, look for the parent of the Rotate button
         if (!$sidebar.length) {
-            var $rotateBtn = $editor.find('button:contains("Rotate"), .btn:contains("Rotate")');
+            // Fallback to the first left-aligned sidebar element.
+            var $rotateBtn = $editor.find('button[aria-label="Rotate"], button:contains("Rotate"), div[role="button"]:contains("Rotate")');
             if ($rotateBtn.length) {
-                $sidebar = $rotateBtn.closest('div').parent();
+                $sidebar = $rotateBtn.closest('ul, div.tools, div.sidebar');
             }
+        }
+
+        if (!$sidebar.length) {
+            $sidebar = $editor.find('.left-sidebar, .tools'); // Try generic classes
         }
 
         if (!$sidebar.length) return;
 
-        var $container = $('<div class="nano-banana-processor" style="margin-top:20px; padding: 20px 24px; border-top: 1px solid rgba(255,255,255,0.1);"></div>');
-        var $heading = $('<div class="heading" style="color: #ccc; margin-bottom: 15px; font-weight: 500; font-size: 11px; text-transform: uppercase;">Nano Banana</div>');
+        // In the screenshot, the left sidebar has square tool buttons (Rotate, Crop).
+        // Let's create a similar tool container that expands our UI when clicked, or just injects it below them.
+        var $container = $('<div class="nano-banana-processor" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;"></div>');
+        var $toolBtn = $('<button type="button" class="btn small" style="width: 100%; justify-content: center; text-align: center; display:flex; flex-direction:column; align-items:center; padding: 10px; background: transparent; border: none; color: #fff; cursor: pointer;">' +
+            '<span style="font-size: 20px; margin-bottom: 5px;">&#127820;</span>' +
+            '<span style="font-size: 11px;">Nano Banana</span>' +
+            '</button>');
 
+        var $panel = $('<div class="nano-banana-panel" style="display: none; position: absolute; left: 100%; top: 0; background: #232d36; border: 1px solid #161d23; padding: 15px; width: 250px; z-index: 100; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>');
+        var $heading = $('<div style="color: #fff; font-weight: bold; margin-bottom: 10px;">Gems Prompts</div>');
         var $select = $('<div class="select fullwidth" style="margin-bottom: 10px;"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
         var $selectInput = $select.find('select');
 
@@ -124,23 +136,28 @@ function initCraftGemsAssetProcessor($) {
             $selectInput.append(`<option value="${index}">${gem.name}</option>`);
         });
 
-        var $btn = $('<button type="button" class="btn submit small disabled" id="nano-banana-process-btn" style="margin-top: 10px; width: 100%;">Generate Image</button>');
+        var $processBtn = $('<button type="button" class="btn submit fullwidth disabled" id="nano-banana-process-btn">Generate</button>');
 
-        $container.append($heading);
-        $container.append($select);
-        $container.append($btn);
+        $panel.append($heading).append($select).append($processBtn);
+        $container.append($toolBtn).append($panel);
 
+        // Fix positioning if the sidebar is relative
+        $sidebar.css('position', 'relative');
         $sidebar.append($container);
+
+        $toolBtn.on('click', function () {
+            $panel.toggle();
+        });
 
         $selectInput.on('change', function () {
             if ($(this).val() !== "") {
-                $btn.removeClass('disabled');
+                $processBtn.removeClass('disabled');
             } else {
-                $btn.addClass('disabled');
+                $processBtn.addClass('disabled');
             }
         });
 
-        $btn.on('click', function () {
+        $processBtn.on('click', function () {
             var gemIndex = $selectInput.val();
             var elementId = $('input[name="elementId"]').val() || $('input[name="sourceId"]').val() || Craft.cp.$app.get('assetId'); // Fallbacks
 
@@ -154,7 +171,7 @@ function initCraftGemsAssetProcessor($) {
                 return;
             }
 
-            $btn.addClass('disabled').text('Generating...');
+            $processBtn.addClass('disabled').text('Generating...');
 
             Craft.postActionRequest('craft-gems/asset/editor-process', {
                 assetId: elementId,
@@ -162,12 +179,12 @@ function initCraftGemsAssetProcessor($) {
             }, function (response, textStatus) {
                 if (textStatus == 'success' && response.success) {
                     Craft.cp.displayNotice('Image Generated!');
-                    // Overlay the returned image on the editor canvas
+                    $panel.hide();
                     overlayGeneratedImage(response.imageUrl || response.base64);
                 } else {
                     Craft.cp.displayError(response.error || 'Error generating image.');
                 }
-                $btn.removeClass('disabled').text('Generate Image');
+                $processBtn.removeClass('disabled').text('Generate');
             });
         });
     }
