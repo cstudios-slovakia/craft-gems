@@ -40,16 +40,16 @@ function initCraftGemsAssetProcessor($) {
 
         // Inject into the primary details panel or sidebar
         var injected = false;
-        if ($context.find('#details').length) {
-            $context.find('#details').append($container);
+        if ($sidebar.find('#details').length) {
+            $sidebar.find('#details').append($container);
             injected = true;
-        } else if ($context.find('.meta').last().length) {
+        } else if ($sidebar.find('.meta').last().length) {
             // Alternatively, append after the last .meta block if #details isn't found
-            $context.find('.meta').last().after($container);
+            $sidebar.find('.meta').last().after($container);
             injected = true;
         } else {
             // Fallback
-            $context.append($container);
+            $sidebar.append($container);
             injected = true;
         }
 
@@ -98,13 +98,121 @@ function initCraftGemsAssetProcessor($) {
         });
     }
 
-    // Monitor for the Asset Editor loading
+    function injectCraftGemsEditorUI($editor) {
+        if ($editor.find('.nano-banana-processor').length) return;
+
+        // Find the left sidebar where Rotate and Crop are
+        var $sidebar = $editor.find('.app-sidebar'); // Approximate class for Craft 4/5 editor sidebar
+        if (!$sidebar.length) {
+            $sidebar = $editor.find('.sidebar');
+        }
+
+        if (!$sidebar.length) return;
+
+        var $container = $('<div class="nano-banana-processor" style="margin-top:20px; padding: 10px; border-top: 1px solid rgba(255,255,255,0.1);"></div>');
+        var $heading = $('<div class="heading" style="color: #fff; margin-bottom: 10px; font-weight: bold;">Nano Banana</div>');
+
+        var $select = $('<div class="select fullwidth"><select id="nano-banana-gem-select" style="width: 100%;"><option value="">Select Prompt...</option></select></div>');
+        var $selectInput = $select.find('select');
+
+        settings.gems.forEach(function (gem, index) {
+            $selectInput.append(`<option value="${index}">${gem.name}</option>`);
+        });
+
+        var $btn = $('<button type="button" class="btn submit small disabled" id="nano-banana-process-btn" style="margin-top: 10px; width: 100%;">Generate Image</button>');
+
+        $container.append($heading);
+        $container.append($select);
+        $container.append($btn);
+
+        $sidebar.append($container);
+
+        $selectInput.on('change', function () {
+            if ($(this).val() !== "") {
+                $btn.removeClass('disabled');
+            } else {
+                $btn.addClass('disabled');
+            }
+        });
+
+        $btn.on('click', function () {
+            var gemIndex = $selectInput.val();
+            var elementId = $('input[name="elementId"]').val() || $('input[name="sourceId"]').val() || Craft.cp.$app.get('assetId'); // Fallbacks
+
+            if (!elementId) {
+                var match = window.location.pathname.match(/\/edit\/(\d+)-/);
+                if (match) elementId = match[1];
+            }
+
+            if (!elementId || gemIndex === "") {
+                Craft.cp.displayError('Could not determine Asset ID.');
+                return;
+            }
+
+            $btn.addClass('disabled').text('Generating...');
+
+            Craft.postActionRequest('craft-gems/asset/editor-process', {
+                assetId: elementId,
+                gemIndex: gemIndex
+            }, function (response, textStatus) {
+                if (textStatus == 'success' && response.success) {
+                    Craft.cp.displayNotice('Image Generated!');
+                    // Overlay the returned image on the editor canvas
+                    overlayGeneratedImage(response.imageUrl || response.base64);
+                } else {
+                    Craft.cp.displayError(response.error || 'Error generating image.');
+                }
+                $btn.removeClass('disabled').text('Generate Image');
+            });
+        });
+    }
+
+    function overlayGeneratedImage(imageSrc) {
+        var $canvasContainer = $('.image-editor-canvas, .editor-canvas').first();
+        if (!$canvasContainer.length) return;
+
+        // Remove old overlay if exists
+        $('#nano-banana-overlay').remove();
+
+        var $overlay = $(`<div id="nano-banana-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: url(${imageSrc}) no-repeat center center; background-size: contain; z-index: 100;"></div>`);
+        $canvasContainer.css('position', 'relative').append($overlay);
+
+        // Mark that saving should save the generated image instead (we'll hook into form submit if possible, or provide a separate 'Save Gen Image' button)
+        if (!$('#nano-banana-save-btn').length) {
+            var $saveTarget = $('.header-buttons .submit').length ? $('.header-buttons') : $('.btngroup.submit').parent();
+            var $saveBtn = $('<button type="button" class="btn submit" id="nano-banana-save-btn" style="background-color: #fca311; margin-left:10px;">Save Nano Banana</button>');
+
+            $saveBtn.on('click', function () {
+                var elementId = $('input[name="elementId"]').val();
+                // Call a backend action to save the generated image as the asset
+                Craft.postActionRequest('craft-gems/asset/editor-save', {
+                    assetId: elementId,
+                    imageSrc: imageSrc
+                }, function (response, textStatus) {
+                    if (textStatus == 'success' && response.success) {
+                        Craft.cp.displayNotice('Generated image saved.');
+                        window.location.reload();
+                    } else {
+                        Craft.cp.displayError('Error saving generated image.');
+                    }
+                });
+            });
+            $saveTarget.append($saveBtn);
+        }
+    }
+
+    // Monitor for the Asset Details or Editor loading
     var observer = new MutationObserver(function (mutations) {
-        // In Craft 5, check if the details panel or the main edit form has rendered
+        // Normal Asset Edit Page Sidebar
         if ($('#details').length && !$('.craft-gems-processor').length) {
             injectCraftGemsUI($('#details').parent());
         } else if ($('.editor-content').length && !$('.craft-gems-processor').length) {
             injectCraftGemsUI($('.editor-content'));
+        }
+
+        // Image Editor specific
+        if ($('.image-editor').length || $('.image-editor-main').length) {
+            injectCraftGemsEditorUI($('.image-editor').length ? $('.image-editor') : $('.image-editor-main'));
         }
     });
 
