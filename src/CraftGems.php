@@ -48,7 +48,8 @@ class CraftGems extends Plugin
 
                     // Then register our script
                     $url = Craft::$app->assetManager->getPublishedUrl(__DIR__ . '/resources/asset-processor.js', true);
-                    $view->registerJsFile($url, ['depends' => [\craft\web\assets\cp\CpAsset::class]]);
+                    $version = filemtime(__DIR__ . '/resources/asset-processor.js');
+                    $view->registerJsFile($url . '?v=' . $version, ['depends' => [\craft\web\assets\cp\CpAsset::class]]);
                 }
             );
         }
