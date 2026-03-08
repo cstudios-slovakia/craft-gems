@@ -247,9 +247,11 @@ function initCraftGemsAssetProcessor($) {
         }
 
         // Image Editor specific - check for the image editor modal/container tabs
-        var $imageEditorTabs = $('.tabs ul[role="tablist"]');
-        if ($imageEditorTabs.length) {
-            injectCraftGemsEditorUI($imageEditorTabs.closest('.tabs, .imageeditor, .image-editor'));
+        var $imageEditor = $('.image-editor, .imageeditor, .image-editor-main, .slideout-container .image-editor, .slideout-container .imageeditor');
+        if ($imageEditor.length) {
+            $imageEditor.each(function () {
+                injectCraftGemsEditorUI($(this));
+            });
         }
     });
 
